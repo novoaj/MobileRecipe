@@ -6,7 +6,8 @@ const MainComponent = () => {
   const isAuthenticated = useSelector(state => state.authenticated);
   const user = useSelector(state => state.user);
   const dispatch = useDispatch();
-
+ // https://stackoverflow.com/questions/48497510/simple-conditional-routing-in-reactjs
+ // can integrate store with react navigateion, need to wrap navigation container in prvider?
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       {user ? ( // Check if user is non-null before displaying

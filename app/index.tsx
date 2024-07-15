@@ -1,7 +1,6 @@
 import React from "react";
-import { Provider } from "react-redux";
-import store from "../store";
-import MainComponent from "../components/MainComponent";
+import RecipeApp from "../components/screens/RecipeApp";
+
 // Mint Green - #98FB98
 // Soft White - #FFFFFF
 // Tomato Red - #FF6347
@@ -11,8 +10,7 @@ import MainComponent from "../components/MainComponent";
 
 export default function Index() {
   return (
-    <Provider store={store}>
-      <MainComponent />
-    </Provider>
-  );
+    <RecipeApp />
+  )
+  
 }
