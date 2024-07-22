@@ -3,6 +3,8 @@ import React from 'react'
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from "@react-navigation/native";
 import axios from 'axios';
+import Toast from "react-native-root-toast";
+
 const logo = require('../../assets/images/react-logo.png');
 
 
@@ -108,7 +110,6 @@ export default function Login(){
 
     const handleLogin = () => {
         // login logic with Django backend, change in user state on success should cause rerender of AppNavigator
-        console.log("DB operations...");
         axios.post(`${process.env.REACT_APP_API_URL}/auth/login/`, {
             username: username,
             password: password,
@@ -117,13 +118,36 @@ export default function Login(){
             },
         }).then(data => {
             if (data.status === 200) {
-                dispatch({ type: 'SET_USER', user: {name: username}});
+                dispatch({ type: 'SET_USER', user: {name: username}}); 
+                // TODO: deal with refresh and access tokens, store them in session storage or something
+                Toast.show("Login Successful!", {
+                    duration: Toast.durations.LONG,
+                    position: Toast.positions.TOP,
+                    shadow: true,
+                    animation: true,
+                    hideOnPress: true,
+                    backgroundColor: "green"
+                });
             }else{
-                Alert.alert("Login Failed, Please Try Again!");
+                Toast.show("Login Failed, Please Try Again!", {
+                    duration: Toast.durations.LONG,
+                    position: Toast.positions.TOP,
+                    shadow: true,
+                    animation: true,
+                    hideOnPress: true,
+                    backgroundColor: "red"
+                });
             }
         })
         .catch(err => {
-            Alert.alert("Login Failed, Please Try Again!");
+            Toast.show("Login Failed, Please Try Again!", {
+                duration: Toast.durations.LONG,
+                position: Toast.positions.TOP,
+                shadow: true,
+                animation: true,
+                hideOnPress: true,
+                backgroundColor: "red"
+            });
         });
     };
     const handleNavigateSignup = () => {

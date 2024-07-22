@@ -2,6 +2,9 @@ import { Text, View, TextInput, Pressable, SafeAreaView, StyleSheet, Image, Butt
 import React from 'react'
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from "@react-navigation/native";
+import axios from 'axios';
+import Toast from "react-native-root-toast";
+
 const logo = require('../../assets/images/react-logo.png');
 
 // Mint Green - #98FB98
@@ -108,11 +111,59 @@ export default function Signup(){
     const navigation = useNavigation();
 
     const handleRegister = () => {
-        // error handling -> check if password and password2 are the same
-        // issues from backend? duplicate username or email, or just simply a server error?
-        // Perform register logic here
-        // interact with Django backend
-        dispatch({ type: 'SET_USER', user: {name: username}});
+        // do passwords match?
+        if (password !== password2) {
+            Alert.alert("Passwords must match");
+            return;
+        }
+        if (password.length < 6) {
+            Alert.alert("Password must be at least 6 characters");
+            return;
+        }
+        // Signup logic with Django backend, change in user state on success should cause rerender of AppNavigator
+        console.log(username, password, email);
+        axios.post(`${process.env.REACT_APP_API_URL}/auth/register/`, {
+            username: username,
+            email: email,
+            password: password,
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+        })
+        .then(data => {
+            console.log(data);
+            if (data.status === 201) {
+                dispatch({ type: 'SET_USER', user: {name: username}}); // TODO: deal with refresh and access tokens
+                Toast.show("Signup Successful!", {
+                    duration: Toast.durations.LONG,
+                    position: Toast.positions.TOP,
+                    shadow: true,
+                    animation: true,
+                    hideOnPress: true,
+                    backgroundColor: "green"
+                });
+            }else{
+                Toast.show("Login Failed, Please Try Again!", {
+                    duration: Toast.durations.LONG,
+                    position: Toast.positions.TOP,
+                    shadow: true,
+                    animation: true,
+                    hideOnPress: true,
+                    backgroundColor: "red"
+                });
+            }
+        })
+        .catch(err => {
+            Toast.show("Login Failed, Please Try Again!", {
+                duration: Toast.durations.LONG,
+                position: Toast.positions.TOP,
+                shadow: true,
+                animation: true,
+                hideOnPress: true,
+                backgroundColor: "red"
+            });
+        });
     };
 
     const handleNavigateLogin = () => {
