@@ -1,16 +1,29 @@
-import { View, Text, SafeAreaView, ActivityIndicator } from "react-native";
+import { View, StyleSheet, SafeAreaView, ActivityIndicator, Dimensions } from "react-native";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import RecipeView from "../RecipeView";
 import RecipeCard from "../RecipeCard";
-import {PanGestureHandler, GestureHandlerRootView} from 'react-native-gesture-handler';
+import { LinearGradient } from "expo-linear-gradient";
 
-
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    background: {
+        flex: 1,
+        justifyContent: 'center', // Adjust as needed
+        alignItems: 'center', // Adjust as needed
+    },
+});
 interface Recipe {
     label: string;
     image: string;
     uri: string;
     id: string;
+    calories: number;
+    ingredientLines: string[];
+    totalTime: number;
 }
 export default function Home(){
     const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -19,7 +32,7 @@ export default function Home(){
     const url = process.env.REACT_APP_EDAMAM_API_URL as string;
     const app_id = process.env.REACT_APP_API_APP_ID as string;
     const app_key = process.env.REACT_APP_API_APP_KEY as string;
-    const fields = ['label', 'image', 'uri'];
+    const fields = ['label', 'image', 'uri', 'ingredientLines', 'calories', 'totalTime'];
 
     useEffect(() => {
         // get data from API on component load
@@ -33,7 +46,8 @@ export default function Home(){
             app_id: app_id,
             app_key: app_key,
             imageSize: "LARGE",
-            random: "true"
+            time: "1+",
+            random: "true",
         });
         fields.forEach(field => queryParams.append('field', field));
 
@@ -48,6 +62,9 @@ export default function Home(){
                 label: hit.recipe.label,
                 image: hit.recipe.image,
                 uri: hit.recipe.uri,
+                ingredientLines: hit.recipe.ingredientLines,
+                calories: Math.floor(hit.recipe.calories),
+                totalTime: hit.recipe.totalTime,
                 id: hit._links.self.href // unique id we can store in our db if user saves this recipe
             }));
             setRecipes(formattedRecipes);
@@ -69,22 +86,25 @@ export default function Home(){
         setCurIndex((prevIndex) => (prevIndex + 1) % recipes.length);
     };
     
-    
+    const { width } = Dimensions.get('window');
     // TODO: ensure no duplicates are shown to current user by storing the recipe id in our db
     return (
-        <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <View>
-                {recipes.length > 0 && curIndex < recipes.length ? (
-                    // Pass the current recipe to the RecipeView component
-                    <RecipeCard 
-                        key={curIndex}
-                        recipe={recipes[curIndex]}
-                        onSwipeLeft={handleSwipeLeft}
-                        onSwipeRight={handleSwipeRight}/>
-                ) : (
-                    <ActivityIndicator size="large" color="#00ff00" /> 
-                )}
-            </View>
-        </SafeAreaView>
+        <>
+            <SafeAreaView style={styles.container}>
+                <View>
+                    {recipes.length > 0 && curIndex < recipes.length ? (
+                        // Pass the current recipe to the RecipeView component
+                        <RecipeCard 
+                            key={curIndex}
+                            recipe={recipes[curIndex]}
+                            onSwipeLeft={handleSwipeLeft}
+                            onSwipeRight={handleSwipeRight}/>
+                    ) : (
+                        <ActivityIndicator size="large" color="#00ff00" /> 
+                    )}
+                </View>
+            </SafeAreaView>
+        </>
+        
     );
 }
