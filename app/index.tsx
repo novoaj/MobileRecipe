@@ -2,6 +2,7 @@ import React from "react";
 import RecipeApp from "../components/screens/RecipeApp";
 import { RootSiblingParent } from "react-native-root-siblings";
 import Toast from "react-native-root-toast";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Mint Green - #98FB98
 // Soft White - #FFFFFF
@@ -13,9 +14,11 @@ import Toast from "react-native-root-toast";
 export default function Index() {
   return (
     <RootSiblingParent>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <RecipeApp />
+        <Toast/>
+      </GestureHandlerRootView>
       
-      <RecipeApp />
-      <Toast/>
     </RootSiblingParent>
   )
   

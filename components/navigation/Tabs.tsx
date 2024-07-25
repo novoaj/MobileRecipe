@@ -1,6 +1,4 @@
-import MainComponent from "../MainComponent";
-import Login from "../screens/Login";
-import Signup from "../screens/Signup";
+import Home from "../screens/Home";
 import Profile from "../screens/Profile";
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import { useSelector } from 'react-redux';
@@ -20,8 +18,8 @@ function TabNavigator(props: any){
             <Tab.Screen options = {{
                 headerShown: false,
                 }}
-                name="MainComponent" 
-                component={MainComponent} />
+                name="Home" 
+                component={Home} />
             <Tab.Screen options = {{
                 headerShown: false,
                 }}
