@@ -121,7 +121,6 @@ export default function Signup(){
             return;
         }
         // Signup logic with Django backend, change in user state on success should cause rerender of AppNavigator
-        console.log(username, password, email);
         axios.post(`${process.env.REACT_APP_API_URL}/auth/register/`, {
             username: username,
             email: email,
@@ -132,7 +131,6 @@ export default function Signup(){
                 },
         })
         .then(data => {
-            console.log(data);
             if (data.status === 201) {
                 dispatch({ type: 'SET_USER', user: {name: username}}); // TODO: deal with refresh and access tokens
                 Toast.show("Signup Successful!", {

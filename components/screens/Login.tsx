@@ -1,5 +1,6 @@
-import { Text, View, TextInput, Pressable, SafeAreaView, StyleSheet, Image, Button, Switch, Alert } from "react-native";
 import React from 'react'
+import { Text, View, TextInput, Pressable, SafeAreaView, StyleSheet, Image, Switch, Alert } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from "@react-navigation/native";
 import axios from 'axios';
@@ -108,6 +109,7 @@ export default function Login(){
     const dispatch = useDispatch();
     const navigation = useNavigation();
 
+    
     const handleLogin = () => {
         // login logic with Django backend, change in user state on success should cause rerender of AppNavigator
         axios.post(`${process.env.REACT_APP_API_URL}/auth/login/`, {
@@ -116,10 +118,20 @@ export default function Login(){
             headers: {
                 'Content-Type': 'application/json'
             },
-        }).then(data => {
-            if (data.status === 200) {
-                dispatch({ type: 'SET_USER', user: {name: username}}); 
-                // TODO: deal with refresh and access tokens, store them in session storage or something
+        }).then(response => {
+            if (response.status === 200) {
+                // data.id, data.tokens.access, data.tokens.refresh, data.tokens.username
+                const { id, tokens, username } = response.data;
+                const { access, refresh } = tokens;
+
+                const setTokens = async(access : string, refresh : string) => {
+                    await AsyncStorage.setItem('accessToken', access);
+                    await AsyncStorage.setItem('refreshToken', refresh);
+                }
+                setTokens(access, refresh); // Store the JWT in AsyncStorage
+                
+                dispatch({ type: 'SET_USER', user: { id, username } });
+
                 Toast.show("Login Successful!", {
                     duration: Toast.durations.LONG,
                     position: Toast.positions.TOP,
