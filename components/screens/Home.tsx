@@ -20,11 +20,17 @@ const styles = StyleSheet.create({
 interface Recipe {
     label: string;
     image: string;
+    thumbnail: apiImage;
     uri: string;
     id: string;
     calories: number;
     ingredientLines: string[];
     totalTime: number;
+}
+interface apiImage {
+    height: number;
+    url: string;
+    width: number;
 }
 
 interface DecodedToken {
@@ -41,25 +47,22 @@ export default function Home(){
     const backend = process.env.REACT_APP_API_URL as string;
     const app_id = process.env.REACT_APP_API_APP_ID as string;
     const app_key = process.env.REACT_APP_API_APP_KEY as string;
-    const fields = ['label', 'image', 'uri', 'ingredientLines', 'calories', 'totalTime'];
+    const fields = ['label', 'image', 'uri', 'ingredientLines', 'calories', 'totalTime', 'images'];
 
 
     // setTokens on component render
-    useEffect(() => {
-        const setTokens = async () => {
-            try {
-                const storedAccessToken = await AsyncStorage.getItem('accessToken');
-                const storedRefreshToken = await AsyncStorage.getItem('refreshToken');
-                
-                // Use nullish coalescing to set default values if tokens are null
-                setAccessToken(storedAccessToken ?? '');
-                setRefreshToken(storedRefreshToken ?? '');
-            } catch (error) {
-                console.error('Failed to get token:', error);
-            }
+    const setTokens = async () => {
+        try {
+            const storedAccessToken = await AsyncStorage.getItem('accessToken');
+            const storedRefreshToken = await AsyncStorage.getItem('refreshToken');
+            // Use nullish coalescing to set default values if tokens are null
+            setAccessToken(storedAccessToken ?? '');
+            setRefreshToken(storedRefreshToken ?? '');
+        } catch (error) {
+            console.error('Failed to get token:', error);
         }
-        setTokens();
-    }, []);
+    }
+    
     // is access token expired
     const isTokenExpired = (token: string | null): boolean => {
         if (!token) return true;
@@ -71,11 +74,10 @@ export default function Home(){
     const refreshAccessToken = async () => {
         if (isTokenExpired(accessToken)) {
             try {
-                const response = await axios.post('/auth/token/refresh/', {
+                const response = await axios.post(`${backend}/token/refresh/`, {
                     refresh: refreshToken,
                 });
-                console.log("refreshing access token");
-                console.log(response);
+                console.log(response.data);
                 const newAccessToken = response.data.access;
                 await AsyncStorage.setItem('accessToken', newAccessToken);
                 setAccessToken(newAccessToken);
@@ -88,20 +90,25 @@ export default function Home(){
         return accessToken;
     }
     // save to db
-    const saveUserRecipe = async(uri: string) => {
+    const saveUserRecipe = async(recipe: Recipe) => {
+        console.log('Saving recipe:', recipe.image, recipe.thumbnail?.url);
+        let imageThumbnail = recipe.thumbnail?.url || recipe.image;
+        console.log('Saving recipe:', recipe.id, recipe.label, imageThumbnail);
         const token = await refreshAccessToken();
         if (!token) return;
-        console.log(token);
-        console.log("post request: ", `${backend}/auth/user-recipes/create/`);
-        axios.post(`${backend}/auth/user-recipes/create/`, { 
-            recipe: uri,
+        axios.post(`${backend}/api/user-recipes/create/`, { 
+            recipe: {
+                id: recipe.id,
+                label: recipe.label,
+                thumbnail: imageThumbnail,
+            }
         }, {
             headers:{
                 "Authorization": `Bearer ${token}`,
             },  
         })
             .then((response) => {
-                console.log(response);
+                console.log(response.data);
                 console.log('Recipe saved successfully');
             })
             .catch((error) => {
@@ -110,6 +117,10 @@ export default function Home(){
     }
     
     useEffect(() => {
+        const waitForTokens = async() => {
+            await setTokens();
+          }
+        waitForTokens(); // set JWT tokens on component load
         // get data from API on component load
         if (!url || !app_id || !app_key) {
             console.error("API URL, APP ID, or API KEY is not provided");
@@ -125,6 +136,7 @@ export default function Home(){
             random: "true",
         });
         fields.forEach(field => queryParams.append('field', field));
+        queryParams.append('imageSize', 'THUMBNAIL');
 
         axios.get(`${url}?${queryParams}`, {
             headers: {
@@ -136,6 +148,7 @@ export default function Home(){
             const formattedRecipes = response.data.hits.map((hit: any) => ({
                 label: hit.recipe.label,
                 image: hit.recipe.image,
+                thumbnail: hit.recipe.images.THUMBNAIL,
                 uri: hit.recipe.uri,
                 ingredientLines: hit.recipe.ingredientLines,
                 calories: Math.floor(hit.recipe.calories),
@@ -143,6 +156,7 @@ export default function Home(){
                 id: hit._links.self.href // unique id we can store in our db if user saves this recipe
             }));
             setRecipes(formattedRecipes);
+            // console.log(recipes[0]);
         })
         .catch((error) => {
             console.error(error);
@@ -158,8 +172,7 @@ export default function Home(){
     const handleSwipeRight = () => {
         console.log('Recipe added');
         // Save recipe logic here
-        console.log("sending recipe to db... ", recipes[curIndex].label, recipes[curIndex].uri);
-        saveUserRecipe(recipes[curIndex].uri);
+        saveUserRecipe(recipes[curIndex]);
         setCurIndex((prevIndex) => (prevIndex + 1) % recipes.length);
     };
     

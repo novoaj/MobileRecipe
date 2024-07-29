@@ -121,7 +121,7 @@ export default function Signup(){
             return;
         }
         // Signup logic with Django backend, change in user state on success should cause rerender of AppNavigator
-        axios.post(`${process.env.REACT_APP_API_URL}/auth/register/`, {
+        axios.post(`${process.env.REACT_APP_API_URL}/api/register/`, {
             username: username,
             email: email,
             password: password,

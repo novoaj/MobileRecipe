@@ -112,7 +112,7 @@ export default function Login(){
     
     const handleLogin = () => {
         // login logic with Django backend, change in user state on success should cause rerender of AppNavigator
-        axios.post(`${process.env.REACT_APP_API_URL}/auth/login/`, {
+        axios.post(`${process.env.REACT_APP_API_URL}/api/login/`, {
             username: username,
             password: password,
             headers: {
