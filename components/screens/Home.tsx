@@ -89,16 +89,25 @@ export default function Home(){
         }
         return accessToken;
     }
+    // extract unique id from recipeUri
+    const getUniqueRecipeId = (recipeUrl: string) => {
+        let uniqueRecipeId = recipeUrl.split('/').pop();
+        let result = (uniqueRecipeId ?? '').split('?')[0];
+        console.log(result);
+        return result.split('_')[1];
+    }
     // save to db
     const saveUserRecipe = async(recipe: Recipe) => {
-        console.log('Saving recipe:', recipe.image, recipe.thumbnail?.url);
+        // console.log('Saving recipe:', recipe.image, recipe.thumbnail?.url);
         let imageThumbnail = recipe.thumbnail?.url || recipe.image;
-        console.log('Saving recipe:', recipe.id, recipe.label, imageThumbnail);
+        let recipe_id = getUniqueRecipeId(recipe.uri);
+
+        console.log('Saving recipe:', recipe_id, recipe.label);
         const token = await refreshAccessToken();
         if (!token) return;
         axios.post(`${backend}/api/user-recipes/create/`, { 
             recipe: {
-                id: recipe.id,
+                id: recipe_id,
                 label: recipe.label,
                 thumbnail: imageThumbnail,
             }

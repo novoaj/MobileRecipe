@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback }from "react";
-import { Text, Button, View, SafeAreaView, StyleSheet, Pressable } from "react-native";
+import { Text, Button, View, SafeAreaView, StyleSheet, Pressable, ScrollView, Image } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import { jwtDecode } from 'jwt-decode';
@@ -7,23 +7,37 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import UserRecipe from "../UserRecipe";
 
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+        paddingHorizontal: 22,
+        backgroundColor: '#f9f9f9',
     },
     header : {
-      fontSize : 24,
+        marginHorizontal : 12,
+        flexDirection : "row",
+        justifyContent: "center",
     },
-    recipeList: {
-        backgroundColor: "white",
-        marginBottom: 10
+    headerText : {
+      fontSize : 24,
+      color: "black",
+      fontWeight: "bold",
+    },
+    avatarIcon: {
+        alignItems: 'center',
+        //marginVertical: 22,
+        // height: 300,
+    },
+    img: {
+        width: 200,
+        height: 200,
     },
     recipeView: {
         padding: 5
     },
     button : {
+        display : "flex",
         backgroundColor : "red",
         height : 45,
         borderColor : "gray",
@@ -31,7 +45,8 @@ const styles = StyleSheet.create({
         borderRadius : 8,
         alignItems : "center",
         justifyContent : "center",
-        marginBottom: 40,
+        marginHorizontal: 20,
+        marginBottom: 20,
     },
     buttonText : {
         color : "white"  ,
@@ -41,6 +56,16 @@ const styles = StyleSheet.create({
     buttonView :{
         width :"100%",
         paddingHorizontal : 50
+    },
+    paginationButton: {
+        marginHorizontal: 5,
+        padding: 10,
+        backgroundColor: "#ddd",
+        borderRadius: 5,
+    },
+    paginationText: {
+        alignSelf: 'center',
+        fontSize: 16,
     },
     
 });
@@ -73,9 +98,11 @@ export default function Profile(){
     const dispatch = useDispatch();
 
     const [userRecipes, setUserRecipes] = React.useState<UserRecipe[]>([]);
-    const [apiRecipes, setAPIRecipes] = React.useState<APIRecipe[]>([]);
-    const [accessToken, setAccessToken] = useState<string | null>(null);
-    const [refreshToken, setRefreshToken] = useState<string | null>(null);
+    const [loading, setLoading] = React.useState(true);
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [totalPages, setTotalPages] = useState<number>(1);
+    const ITEMS_PER_PAGE = 5;
+
     const url = process.env.REACT_APP_EDAMAM_API_URL as string;
     const backend = process.env.REACT_APP_API_URL as string;
     const app_id = process.env.REACT_APP_API_APP_ID as string;
@@ -88,87 +115,184 @@ export default function Profile(){
           const storedAccessToken = await AsyncStorage.getItem('accessToken');
           const storedRefreshToken = await AsyncStorage.getItem('refreshToken');
           // Use nullish coalescing to set default values if tokens are null
-          setAccessToken(storedAccessToken ?? '');
-          setRefreshToken(storedRefreshToken ?? '');
+          return {
+            accessToken: storedAccessToken ?? '',
+            refreshToken: storedRefreshToken ?? ''
+          }
       } catch (error) {
           console.error('Failed to get token:', error);
+          return {
+            accessToken: null,
+            refreshToken: null
+          }
       }
   }
   
   // is access token expired
-  const isTokenExpired = (token: string | null): boolean => {
-      if (!token) return true;
-      const decodedToken = jwtDecode<DecodedToken>(token);
-      const currentTime = Date.now() / 1000;
-      return decodedToken.exp < currentTime;
-  };
+    const isTokenExpired = (token: string | null): boolean => {
+        if (!token) return true;
+        const decodedToken = jwtDecode<DecodedToken>(token);
+        const currentTime = Date.now() / 1000;
+        return decodedToken.exp < currentTime;
+    };
   // refresh if necessary using refreshToken
-  const refreshAccessToken = async () => {
-      if (isTokenExpired(accessToken)) {
-          try {
-              const response = await axios.post(`${backend}/token/refresh/`, {
-                  refresh: refreshToken,
-              });
-              const newAccessToken = response.data.access;
-              await AsyncStorage.setItem('accessToken', newAccessToken);
-              setAccessToken(newAccessToken);
-              return newAccessToken;
-          } catch (error) {
-              console.error('Failed to refresh token:', error);
-              return null;
-          }
-      }
+    const refreshAccessToken = async (accessToken: string | null, refreshToken: string | null): Promise<string | null> => {
+        if (isTokenExpired(accessToken)) {
+            try {
+                const response = await axios.post(`${backend}/token/refresh/`, {
+                    refresh: refreshToken,
+                });
+                const newAccessToken = response.data.access;
+                await AsyncStorage.setItem('accessToken', newAccessToken);
+                return newAccessToken;
+            } catch (error) {
+                console.error('Failed to refresh token:', error);
+                return null;
+            }
+        }
       return accessToken;
   }
 
   // retrieves this user's recipes from our API
-  const getUserRecipes = async() => {
+    const getUserRecipes = async(token: string | null) => {
     // const token = await refreshAccessToken();
-    // if (!token) return;
-    axios.get(`${backend}/api/user-recipes/`, {
-        headers:{
-            "Authorization": `Bearer ${accessToken}`,
-        },  
-    })
-    .then((response) => {
-        // console.log(response.data);
-        setUserRecipes(response.data.map((item: ListItem) => item.recipe));
-    })
-    .catch((error) => {
-        console.error('Failed to get recipes:', error);
-    });
-  }
+        if (!token) return;
+        axios.get(`${backend}/api/user-recipes/`, {
+            headers:{
+                "Authorization": `Bearer ${token}`,
+            },  
+        })
+        .then((response) => {
+            // console.log(response.data);
+            setUserRecipes(response.data.map((item: ListItem) => item.recipe));
+            setTotalPages(Math.ceil(response.data.length / ITEMS_PER_PAGE));
+        })
+        .catch((error) => {
+            console.error('Failed to get recipes:', error);
+        });
+    }
+    const initialize = async() => {
+        const {accessToken, refreshToken} = await setTokens();
+        const token =  await refreshAccessToken(accessToken, refreshToken);
+        await getUserRecipes(token);
+        setLoading(false);
+        }
+        useFocusEffect(
+            useCallback(() => {
+                initialize();
+            }, [])
+        );
+    const deleteUserRecipe = async(recipeId: string) => {
+        // get jwt tokens, ensure they are valid
+        const {accessToken, refreshToken} = await setTokens();
+        const token =  await refreshAccessToken(accessToken, refreshToken);
 
-  useFocusEffect(
-    useCallback(() => {
-        const fetchTokensAndRecipes = async () => {
-            await setTokens();
-            await getUserRecipes();
-        };
-        fetchTokensAndRecipes();
-        // console.log(userRecipes);
-    }, [])
-);
+        // delete from database using api endpoint
+        console.log("removing from db... ", recipeId);
 
+        const response = await axios.delete(`${backend}/api/user-recipes/delete/${recipeId}/`, {
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            },
+        })
+        .then((response) => {
+            console.log(response.status);
+        })
+        .catch((error) => {
+            console.error('Failed to delete recipe:', error);
+        });
 
+        // delete from state
+        console.log("removing from List... ", recipeId);
+        setUserRecipes(userRecipes.filter(recipe => recipe.api_id !== recipeId));
+    }
+    const handlePreviousPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
     return (<>
        <SafeAreaView style={styles.container}>
-            <Text style={styles.header}>Profile</Text>
-            <Text>{user.name}</Text>
-            <View style={styles.recipeList}>
-                {userRecipes.map((recipe, index) => (
-                    <View key={index} style={styles.recipeView}>
-                        <UserRecipe thumbnail={recipe.thumbnail} recipeId = {recipe.api_id} label={recipe.title}></UserRecipe>
-                        </View>
-                ))}
+            <View style={styles.header}>
+                <Text style={styles.headerText}>Profile</Text>
+                <Text>{user.name}</Text>
             </View>
-            <Pressable
-                style={styles.button}
-                onPress={() => dispatch({ type: 'LOGOUT' })}> 
-                <Text style={styles.buttonText}>
-                    Logout
-                </Text>
-            </Pressable>
+
+            <ScrollView>
+                <View style={styles.avatarIcon}>
+                    <Image source={require('../../assets/images/avatarIcon.png')} style={styles.img}/>
+                    
+                </View>
+                <View>
+                    <View style={{
+                            flexDirection: 'column',
+                            marginBottom: 6,
+                            paddingHorizontal: 20,
+                        }}>
+                            <Text style={{ fontWeight: 'bold' }}>Username:</Text>
+                            <View style={{
+                                height: 44,
+                                width: "100%",
+                                borderColor: '#F1F1F1',
+                                borderWidth: 1,
+                                borderRadius: 5,
+                                marginVertical: 5,
+                                justifyContent: 'center',
+                                paddingLeft: 8
+                            }}>
+                                <Text>{user.username}</Text>
+                            </View>
+                        </View>
+                    </View>
+                    <View style={{
+                        marginHorizontal: 20,
+                        borderColor: '#F1F1F1',
+                        borderWidth: 1,
+                        borderRadius: 12,
+                        marginBottom: 10,
+                    }}>
+                        {userRecipes.slice((currentPage - 1) * ITEMS_PER_PAGE, ((currentPage - 1) * ITEMS_PER_PAGE) + ITEMS_PER_PAGE).map((recipe, index) => (
+                            <View key={index} style={styles.recipeView}>
+                                <UserRecipe thumbnail={recipe.thumbnail} recipeId = {recipe.api_id} label={recipe.title} deleteRecipe={deleteUserRecipe}></UserRecipe>
+                                </View>
+                        ))}
+                        <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 20 }}>
+                            <Pressable
+                                style={styles.paginationButton}
+                                onPress={handlePreviousPage}
+                                disabled={currentPage === 1}
+                            >
+                                <Text style={styles.paginationText}>&#x3c;</Text>
+                            </Pressable>
+                            <Text style={styles.paginationText}>{`${currentPage} / ${totalPages}`}</Text>
+                            <Pressable
+                                style={styles.paginationButton}
+                                onPress={handleNextPage}
+                                disabled={currentPage === totalPages}
+                            >
+                                <Text style={styles.paginationText}>&#x3e;</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                    
+
+                    <Pressable
+                        style={styles.button}
+                        onPress={() => dispatch({ type: 'LOGOUT' })}> 
+                        <Text style={styles.buttonText}>
+                            Logout
+                        </Text>
+                    </Pressable>
+            </ScrollView>
+            
+            
+            
       </SafeAreaView>
     </>);
 }
