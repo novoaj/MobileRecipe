@@ -6,13 +6,14 @@ import { jwtDecode } from 'jwt-decode';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import UserRecipe from "../UserRecipe";
+import {COLORS} from '../../constants/Colors';
 
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingHorizontal: 22,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: COLORS.white,
     },
     header : {
         marginHorizontal : 12,
@@ -21,26 +22,24 @@ const styles = StyleSheet.create({
     },
     headerText : {
       fontSize : 24,
-      color: "black",
+      color: COLORS.black,
       fontWeight: "bold",
     },
     avatarIcon: {
         alignItems: 'center',
-        //marginVertical: 22,
-        // height: 300,
     },
     img: {
         width: 200,
         height: 200,
     },
     recipeView: {
-        padding: 5
+        padding: 3
     },
     button : {
         display : "flex",
-        backgroundColor : "red",
+        backgroundColor : COLORS.red,
         height : 45,
-        borderColor : "gray",
+        borderColor : COLORS.lightgray,
         borderWidth  : 1,
         borderRadius : 8,
         alignItems : "center",
@@ -49,7 +48,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     buttonText : {
-        color : "white"  ,
+        color : COLORS.white,
         fontSize: 18,
         fontWeight : "bold"
     }, 
@@ -60,8 +59,8 @@ const styles = StyleSheet.create({
     paginationButton: {
         marginHorizontal: 5,
         padding: 10,
-        backgroundColor: "#ddd",
-        borderRadius: 5,
+        backgroundColor: COLORS.lightgray,
+        borderRadius: 7
     },
     paginationText: {
         alignSelf: 'center',
@@ -202,10 +201,18 @@ export default function Profile(){
             console.error('Failed to delete recipe:', error);
         });
 
-        // delete from state
+        // delete from state and update pagination
         console.log("removing from List... ", recipeId);
-        setUserRecipes(userRecipes.filter(recipe => recipe.api_id !== recipeId));
+        const updatedUserRecipes = (userRecipes.filter(recipe => recipe.api_id !== recipeId));
+        setUserRecipes(updatedUserRecipes);
+
+        const newTotalPages = Math.ceil(updatedUserRecipes.length / ITEMS_PER_PAGE);
+        setTotalPages(newTotalPages);
+        if (currentPage > newTotalPages) {
+            setCurrentPage(newTotalPages);
+        }
     }
+
     const handlePreviousPage = () => {
         if (currentPage > 1) {
             setCurrentPage(currentPage - 1);
@@ -233,14 +240,14 @@ export default function Profile(){
                     <View style={{
                             flexDirection: 'column',
                             marginBottom: 6,
-                            paddingHorizontal: 20,
+                            paddingHorizontal: 18,
                         }}>
                             <Text style={{ fontWeight: 'bold' }}>Username:</Text>
                             <View style={{
                                 height: 44,
                                 width: "100%",
-                                borderColor: '#F1F1F1',
-                                borderWidth: 1,
+                                borderColor: COLORS.lightgray,
+                                borderWidth: 2,
                                 borderRadius: 5,
                                 marginVertical: 5,
                                 justifyContent: 'center',
@@ -251,9 +258,9 @@ export default function Profile(){
                         </View>
                     </View>
                     <View style={{
-                        marginHorizontal: 20,
-                        borderColor: '#F1F1F1',
-                        borderWidth: 1,
+                        marginHorizontal: 18,
+                        borderColor: COLORS.lightgray,
+                        borderWidth: 2,
                         borderRadius: 12,
                         marginBottom: 10,
                     }}>

@@ -4,27 +4,25 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from "@react-navigation/native";
 import axios from 'axios';
 import Toast from "react-native-root-toast";
+import {COLORS} from '../../constants/Colors';
+const logo = require('../../assets/images/logo-png.png');
 
-const logo = require('../../assets/images/react-logo.png');
 
-// Mint Green - #98FB98
-// Soft White - #FFFFFF
-// Tomato Red - #FF6347
-// Lemon Yellow - #FFFACD
-// Basil Green - #228B22
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingTop: 60,
         alignItems: "center",
-        backgroundColor: "white",
+        backgroundColor: COLORS.white,
     },
     logo : {
-        height: 150,
+        height: 180,
+        width: 180,
+        marginVertical: 26,
     },
     title: {
-        fontSize: 30,
-        color: "#FF6347",
+        fontSize: 26,
+        color: COLORS.black,
         fontWeight: "bold",
         textAlign: "center",
         textTransform: "uppercase",
@@ -39,7 +37,7 @@ const styles = StyleSheet.create({
     input: {
         height: 40,
         paddingHorizontal: 10,
-        borderColor: "#FF6347",
+        borderColor: COLORS.lightgray,
         borderWidth: 1,
         borderRadius: 8,
     },
@@ -63,20 +61,21 @@ const styles = StyleSheet.create({
     },
     forgotText : {
         fontSize : 11,
-        color : "#FF6347"
+        color : COLORS.red
     },
     button : {
-        backgroundColor : "red",
+        backgroundColor : COLORS.red,
         height : 45,
-        borderColor : "gray",
+        borderColor : COLORS.lightgray,
         borderWidth  : 1,
         borderRadius : 8,
         alignItems : "center",
         justifyContent : "center",
-        marginBottom: 40,
+        marginVertical: 18,
+        marginBottom: 20,
     },
     buttonText : {
-        color : "white"  ,
+        color : COLORS.white,
         fontSize: 18,
         fontWeight : "bold"
     }, 
@@ -89,9 +88,9 @@ const styles = StyleSheet.create({
         color : "gray",
       },
     signup : {
-        color : "#FF6347",
+        color : COLORS.red,
         fontSize : 13
-    }
+    },
 });
 interface RootState {
     authenticated: boolean;
@@ -235,7 +234,7 @@ export default function Signup(){
                 </View>
                 <Text style={styles.footerText}>Already Have an Account? 
                     <Text style={styles.signup} onPress={handleNavigateLogin}>  
-                        Login
+                        &nbsp;Login
                     </Text>
                 </Text>
         </SafeAreaView>

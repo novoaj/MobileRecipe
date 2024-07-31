@@ -2,6 +2,11 @@ import React, { useRef } from 'react';
 import {View, Image, Text, StyleSheet, Animated} from 'react-native';
 import { RectButton } from 'react-native-gesture-handler';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
+import { faTrash } from '@fortawesome/free-solid-svg-icons/faTrash'
+import {faArrowAltCircleRight} from '@fortawesome/free-regular-svg-icons/faArrowAltCircleRight'
+import {faCircleArrowRight} from '@fortawesome/free-solid-svg-icons/faCircleArrowRight'
+import {COLORS} from '../constants/Colors';
 
 type UserRecipeProps = {
     thumbnail: string;
@@ -15,10 +20,12 @@ const styles = StyleSheet.create({
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         padding: 10,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: COLORS.white,
         borderRadius: 10,
-        borderColor: '#f2f2f2',
+        borderWidth: 1,
+        borderColor: COLORS.lightgray,
     },
     img: {
         width: 50,
@@ -28,28 +35,37 @@ const styles = StyleSheet.create({
     text: {
         textAlign: 'center',
         fontSize: 14,
+        width: "70%",
     },
     rightAction: {
         backgroundColor: 'red',
         justifyContent: 'center',
         alignItems: 'center',
         flex: 1,
+        borderRadius: 12,
     },
-    actionText: {
+    icon: {
         color: 'white',
         alignSelf: 'flex-end',
+        paddingRight: 50,
+    },
+    arrow: {
+      alignSelf: 'flex-end',
+      paddingRight: 50,
+      height: 50,
+      margin: "auto",
+      color: "#007AFF",
+
     }
 })
 
 const UserRecipe: React.FC<UserRecipeProps> = ({ thumbnail, recipeId, label, deleteRecipe }) => {
     const swipeableRef = useRef<Swipeable>(null);
     const handleDelete = () => {
-        // console.log(`Deleting recipe with id ${recipeId}`);
-        deleteRecipe(recipeId)
+        deleteRecipe(recipeId) // propogate up to parent component
         if (swipeableRef.current) {
-          swipeableRef.current.close();
+          swipeableRef.current.close(); // close this swipeable
       }
-        // need to propagate this up to the parent component
     }
     const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
         const trans = dragX.interpolate({
@@ -58,15 +74,7 @@ const UserRecipe: React.FC<UserRecipeProps> = ({ thumbnail, recipeId, label, del
         });
         return (
           <RectButton style={styles.rightAction} onPress={handleDelete}>
-            <Animated.Text
-              style={[
-                styles.actionText,
-                {
-                  transform: [{ translateX: trans }],
-                },
-              ]}>
-              Delete
-            </Animated.Text>
+            <FontAwesomeIcon style={styles.icon} icon={faTrash} />
           </RectButton>
         );
       };
@@ -75,9 +83,9 @@ const UserRecipe: React.FC<UserRecipeProps> = ({ thumbnail, recipeId, label, del
             <View style= {styles.container}>
                 <Image style={styles.img} src={thumbnail} alt={label} />
                 <Text style={styles.text}>{label}</Text>
-                </View>
-            </Swipeable>
-        
+                <FontAwesomeIcon style={styles.arrow} icon={faCircleArrowRight} />
+            </View>
+        </Swipeable>
     );
 };
 

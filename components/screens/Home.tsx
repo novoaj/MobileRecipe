@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import RecipeCard from "../RecipeCard";
 import { jwtDecode } from 'jwt-decode';
+import {COLORS} from '../../constants/Colors';
 
 const styles = StyleSheet.create({
     container: {
@@ -199,7 +200,7 @@ export default function Home(){
                             onSwipeLeft={handleSwipeLeft}
                             onSwipeRight={handleSwipeRight}/>
                     ) : (
-                        <ActivityIndicator size="large" color="#00ff00" /> 
+                        <ActivityIndicator size="large" color={COLORS.lightgray} /> 
                     )}
                 </View>
             </SafeAreaView>
