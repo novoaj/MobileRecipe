@@ -3,18 +3,17 @@ Backend repository can be found here: https://github.com/novoaj/Django-API
 
 This is a recipe app based on modern dating apps with swiping functionality for users to right swipe on recipes they like or deny recipes they aren't interested in. This app makes use of Edamam's Recipe API to generate recipes for users to interact with: https://developer.edamam.com/edamam-recipe-api. 
 
-## Technologies used
+## Technologies used:
 - React Native
 - React TypeScript
 - Redux
 - Expo
-- Postgres and Django on the backend
+- PostgreSQL and Django on the backend
 
 ## Demo:
 https://github.com/user-attachments/assets/75e01abf-04f3-4b0b-8f7c-4c94c119126a
 
 ## Get started
-
 ### Prerequisites
 
 Ensure you have the following installed:
