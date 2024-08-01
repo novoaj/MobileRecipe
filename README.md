@@ -1,50 +1,55 @@
-# Welcome to your Expo app 👋
+# RecipeMatch mobile app frontend
+Backend repository can be found here: https://github.com/novoaj/Django-API
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This is a recipe app based on modern dating apps with swiping functionality for users to right swipe on recipes they like or deny recipes they aren't interested in. This app makes use of Edamam's Recipe API to generate recipes for users to interact with: https://developer.edamam.com/edamam-recipe-api. 
+
+## Technologies used
+React Native
+React TypeScript
+Redux
+Expo
+Postgres and Django on the backend
+
+## Demo:
+https://github.com/user-attachments/assets/75e01abf-04f3-4b0b-8f7c-4c94c119126a
 
 ## Get started
 
-1. Install dependencies
+### Prerequisites
 
+Ensure you have the following installed:
+
+- Node.js
+- npm (Node Package Manager)
+- Expo CLI
+
+### Installation
+1. Clone repo
+   ```bash
+   git clone https://github.com/novoaj/MobileRecipe.git
+   ```
+2. Navigate to the project directory
+   ```bash
+   cd MobileRecipe
+   ```
+3. Install dependencies
    ```bash
    npm install
    ```
-
-2. Start the app
-
+4. Start the app
    ```bash
     npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+### Project Structure
+MobileRecipe/
+├── assets/               # Assets like images and fonts
+├── components/           # Reusable components
+├── screens/              # Screen components
+├── navigation/           # Navigation setup
+├── redux/                # Redux setup for state management
+├── App.tsx               # Entry point of the app
+├── package.json          # Project dependencies and scripts
+└── README.md             # Project documentation
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
