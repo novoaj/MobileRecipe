@@ -42,6 +42,7 @@ Ensure you have the following installed:
    ```
 
 ### Project Structure
+```bash
 MobileRecipe/
 ├── assets/               # Assets like images and fonts
 ├── components/           # Reusable components
@@ -51,5 +52,6 @@ MobileRecipe/
 ├── App.tsx               # Entry point of the app
 ├── package.json          # Project dependencies and scripts
 └── README.md             # Project documentation
+```
 
 
