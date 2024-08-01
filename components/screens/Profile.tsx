@@ -8,6 +8,7 @@ import * as SecureStorage from 'expo-secure-store';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import UserRecipe from "../UserRecipe";
 import {COLORS} from '../../constants/Colors';
+import Toast from "react-native-root-toast";
 
 
 const styles = StyleSheet.create({
@@ -107,12 +108,9 @@ export default function Profile(){
 
      // is access token expired
      const isTokenExpired = (token: string | null): boolean => {
-        console.log("isTokenExpired method: ", token);
         if (!token) return true;
         const decodedToken = jwtDecode<DecodedToken>(token);
         const currentTime = Math.floor(Date.now() / 1000);
-        console.log(decodedToken.exp, currentTime);
-        console.log("Is token expired?", decodedToken.exp < currentTime);  // Condition evaluation
         return decodedToken.exp < currentTime;
     };
     const refreshTokens = async(refreshToken : string) => {
@@ -120,7 +118,6 @@ export default function Profile(){
             console.error("Refresh token is missing");
             return;
         }
-        console.log("refreshing Token: ", refreshToken);
         axios.post(`${backend}/token/refresh/`, {
             refresh: refreshToken,
         }, {
@@ -131,7 +128,7 @@ export default function Profile(){
             SecureStorage.setItem('accessToken', newAccessToken ?? '');
         })
         .catch((error) => {
-            console.log("error refreshing tokens: ", error);
+            console.error("error refreshing tokens: ", error);
         });
     }
     const clearTokens = async () => {
@@ -164,7 +161,6 @@ export default function Profile(){
             },  
         })
         .then((response) => {
-            // console.log(response.data);
             setApiRecipes(response.data.map((item: ListItem) => item.recipe));
             setTotalPages(Math.ceil(response.data.length / ITEMS_PER_PAGE));
         })
@@ -205,21 +201,37 @@ export default function Profile(){
         }
         
         // delete from database using api endpoint
-        console.log("removing from db... ", recipeId);
         await axios.delete(`${backend}/api/user-recipes/delete/${recipeId}/`, {
             headers: {
                 "Authorization": `Bearer ${accessToken}`,
             },
         })
         .then((response) => {
-            console.log(response.status);
+            if (response.status === 204) {
+                Toast.show("Recipe Deleted!", {
+                    duration: Toast.durations.SHORT,
+                    position: Toast.positions.TOP,
+                    shadow: true,
+                    animation: true,
+                    hideOnPress: true,
+                    backgroundColor: "green"
+                });
+            }else{
+                Toast.show("Error deleting recipe", {
+                    duration: Toast.durations.SHORT,
+                    position: Toast.positions.TOP,
+                    shadow: true,
+                    animation: true,
+                    hideOnPress: true,
+                    backgroundColor: "red"
+                });
+            }
         })
         .catch((error) => {
             console.error('Failed to delete recipe:', error);
         });
 
         // remove from local state
-        console.log("removing from List... ", recipeId);
         const updatedApiRecipes = apiRecipes.filter(recipe => recipe.api_id !== recipeId);
         setApiRecipes(updatedApiRecipes);
         const newTotalPages = Math.ceil(updatedApiRecipes.length / ITEMS_PER_PAGE);
@@ -242,7 +254,6 @@ export default function Profile(){
     };
 
     const handleSeeMore = (recipeId : string, recipeName : string) => {
-        console.log(recipeId);
         navigation.push('Recipe', {
             params: {recipeId: recipeId, recipeName: recipeName}
         });
@@ -273,10 +284,17 @@ export default function Profile(){
             },  
         })
         .then((response) => {
-            console.log(response.status)
+            Toast.show("Logout Successful!", {
+                duration: Toast.durations.LONG,
+                position: Toast.positions.TOP,
+                shadow: true,
+                animation: true,
+                hideOnPress: true,
+                backgroundColor: "blue"
+            });
         })
         .catch((error) => {
-            console.log('Failed to logout:', error);
+            console.error('Failed to logout:', error);
         });
 
         // cleanup secure storage and redux state

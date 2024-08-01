@@ -137,7 +137,7 @@ export default function Login(){
                     shadow: true,
                     animation: true,
                     hideOnPress: true,
-                    backgroundColor: "green"
+                    backgroundColor: "blue"
                 });
             }else{
                 Toast.show("Login Failed, Please Try Again!", {

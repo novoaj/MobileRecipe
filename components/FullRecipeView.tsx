@@ -17,8 +17,6 @@ export default function RecipeView(props: any){
     const recipeName =  props.route.params.params.recipeName
     const [recipeData, setRecipeData] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
-    console.log(props.route.params.params);
-    console.log(recipeId, recipeName)
 
     const url = process.env.REACT_APP_EDAMAM_API_URL as string;
     const app_id = process.env.REACT_APP_API_APP_ID as string;
@@ -35,7 +33,6 @@ export default function RecipeView(props: any){
         fields.forEach(field => queryParams.append('field', field));
 
         let requestUrl = `${url}/${recipeId}?${queryParams}`;
-        console.log(requestUrl);
         axios.get(requestUrl, {
             headers: {
                 'accept': 'application/json',
@@ -43,7 +40,6 @@ export default function RecipeView(props: any){
             }
         })
         .then((response) => {
-            console.log(response.data)
             let recipe = response.data.recipe
             setRecipeData({
                 image : recipe.image,

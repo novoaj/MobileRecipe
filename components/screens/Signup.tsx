@@ -148,7 +148,7 @@ export default function Signup(){
                     shadow: true,
                     animation: true,
                     hideOnPress: true,
-                    backgroundColor: "green"
+                    backgroundColor: "blue"
                 });
             }else{
                 Toast.show("Register Failed, Please Try Again!", {

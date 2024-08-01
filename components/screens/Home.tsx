@@ -76,7 +76,7 @@ export default function Home(){
             SecureStorage.setItem('accessToken', newAccessToken ?? '');
         })
         .catch((error) => {
-            console.log("error refreshing tokens: ", error);
+            console.error("error refreshing tokens: ", error);
         });
     }
     
@@ -84,7 +84,6 @@ export default function Home(){
     const getUniqueRecipeId = (recipeUrl: string) => {
         let uniqueRecipeId = recipeUrl.split('/').pop();
         let result = (uniqueRecipeId ?? '').split('?')[0];
-        // console.log(result);
         return result.split('_')[1];
     }
     // save to db
@@ -103,7 +102,6 @@ export default function Home(){
             accessToken = await SecureStorage.getItemAsync('accessToken');
         }
 
-        console.log('Saving recipe:', recipe_id, recipe.label);
         axios.post(`${backend}/api/user-recipes/create/`, { 
             recipe: {
                 id: recipe_id,
@@ -116,8 +114,25 @@ export default function Home(){
             },  
         })
         .then((response) => {
-            console.log(response.data);
-            console.log('Recipe saved successfully');
+            if (response.status === 201) {
+                Toast.show("Recipe Saved!", {
+                    duration: Toast.durations.SHORT,
+                    position: Toast.positions.TOP,
+                    shadow: true,
+                    animation: true,
+                    hideOnPress: true,
+                    backgroundColor: "green"
+                });
+            } else{
+                Toast.show("Error Saving Recipe", {
+                    duration: Toast.durations.SHORT,
+                    position: Toast.positions.TOP,
+                    shadow: true,
+                    animation: true,
+                    hideOnPress: true,
+                    backgroundColor: "red"
+                });
+            }
         })
         .catch((error) => {
             Toast.show("Error Saving Recipe", {
@@ -131,7 +146,6 @@ export default function Home(){
         });
 
         // save recipe to userState
-        console.log("saving recipe to redux state");
         dispatch({ type: 'ADD_RECIPE', recipe: {
             api_id: recipe_id,  
             thumbnail: imageThumbnail,
@@ -185,13 +199,11 @@ export default function Home(){
     }, []);
     // swiping logic
     const handleSwipeLeft = () => {
-        console.log('Recipe denied');
         setCurIndex((prevIndex) => (prevIndex + 1) % recipes.length);
     };
 
     const handleSwipeRight = () => {
-        console.log('Recipe added');
-        // Save recipe logic here
+        // Save recipe logic
         saveUserRecipe(recipes[curIndex]);
         setCurIndex((prevIndex) => (prevIndex + 1) % recipes.length);
     };
