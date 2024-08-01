@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback }from "react";
 import { Text, Button, View, SafeAreaView, StyleSheet, Pressable, ScrollView, Image } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import axios from "axios";
 import { jwtDecode } from 'jwt-decode';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
+import * as SecureStorage from 'expo-secure-store';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import UserRecipe from "../UserRecipe";
 import {COLORS} from '../../constants/Colors';
 
@@ -71,6 +72,7 @@ const styles = StyleSheet.create({
 interface RootState {
     authenticated: boolean;
     user: any; // Replace 'any' with the actual type of your user state
+    savedRecipes: any;
 }
 interface ListItem {
   recipe: UserRecipe
@@ -92,78 +94,78 @@ interface DecodedToken {
   exp: number;
 }
 export default function Profile(){
-    const isAuthenticated = useSelector((state : RootState) => state.authenticated);
     const user = useSelector((state : RootState) => state.user);
     const dispatch = useDispatch();
-
-    const [userRecipes, setUserRecipes] = React.useState<UserRecipe[]>([]);
+    const navigation = useNavigation<NativeStackNavigationProp<any>>();
+    const [apiRecipes, setApiRecipes] = useState<UserRecipe[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [totalPages, setTotalPages] = useState<number>(1);
     const ITEMS_PER_PAGE = 5;
 
-    const url = process.env.REACT_APP_EDAMAM_API_URL as string;
     const backend = process.env.REACT_APP_API_URL as string;
-    const app_id = process.env.REACT_APP_API_APP_ID as string;
-    const app_key = process.env.REACT_APP_API_APP_KEY as string;
-    const fields = ['image', 'uri', 'ingredientLines', 'calories', 'totalTime'];
 
-    // setTokens on component render
-    const setTokens = async () => {
-      try {
-          const storedAccessToken = await AsyncStorage.getItem('accessToken');
-          const storedRefreshToken = await AsyncStorage.getItem('refreshToken');
-          // Use nullish coalescing to set default values if tokens are null
-          return {
-            accessToken: storedAccessToken ?? '',
-            refreshToken: storedRefreshToken ?? ''
-          }
-      } catch (error) {
-          console.error('Failed to get token:', error);
-          return {
-            accessToken: null,
-            refreshToken: null
-          }
-      }
-  }
-  
-  // is access token expired
-    const isTokenExpired = (token: string | null): boolean => {
+     // is access token expired
+     const isTokenExpired = (token: string | null): boolean => {
+        console.log("isTokenExpired method: ", token);
         if (!token) return true;
         const decodedToken = jwtDecode<DecodedToken>(token);
-        const currentTime = Date.now() / 1000;
+        const currentTime = Math.floor(Date.now() / 1000);
+        console.log(decodedToken.exp, currentTime);
+        console.log("Is token expired?", decodedToken.exp < currentTime);  // Condition evaluation
         return decodedToken.exp < currentTime;
     };
-  // refresh if necessary using refreshToken
-    const refreshAccessToken = async (accessToken: string | null, refreshToken: string | null): Promise<string | null> => {
-        if (isTokenExpired(accessToken)) {
-            try {
-                const response = await axios.post(`${backend}/token/refresh/`, {
-                    refresh: refreshToken,
-                });
-                const newAccessToken = response.data.access;
-                await AsyncStorage.setItem('accessToken', newAccessToken);
-                return newAccessToken;
-            } catch (error) {
-                console.error('Failed to refresh token:', error);
-                return null;
-            }
+    const refreshTokens = async(refreshToken : string) => {
+        if (!refreshToken) {
+            console.error("Refresh token is missing");
+            return;
         }
-      return accessToken;
-  }
+        console.log("refreshing Token: ", refreshToken);
+        axios.post(`${backend}/token/refresh/`, {
+            refresh: refreshToken,
+        }, {
+            headers: {"Content-Type": "application/json"}
+        })
+        .then((response) => {
+            let newAccessToken = response.data.access;
+            SecureStorage.setItem('accessToken', newAccessToken ?? '');
+        })
+        .catch((error) => {
+            console.log("error refreshing tokens: ", error);
+        });
+    }
+    const clearTokens = async () => {
+        try {
+            await SecureStorage.deleteItemAsync('accessToken');
+            await SecureStorage.deleteItemAsync('refreshToken');
+        } catch (error) {
+            console.error('Failed to clear token:', error);
+        }
+    }
 
-  // retrieves this user's recipes from our API
-    const getUserRecipes = async(token: string | null) => {
-    // const token = await refreshAccessToken();
-        if (!token) return;
+    // retrieves this user's recipes from our server
+    const getAPIRecipes = async() => {
+        // const token = await refreshAccessToken();
+        let accessToken = await SecureStorage.getItemAsync('accessToken');
+        let refreshToken = await SecureStorage.getItemAsync('refreshToken');
+
+        if (!accessToken || !refreshToken) {
+            console.error("Access or refresh token is missing, can't get recipes");
+            return;
+        }else if (isTokenExpired(accessToken)){
+            await refreshTokens(refreshToken ?? '');
+            accessToken = await SecureStorage.getItemAsync('accessToken');
+        }
+
+        if (!accessToken) return;
         axios.get(`${backend}/api/user-recipes/`, {
             headers:{
-                "Authorization": `Bearer ${token}`,
+                "Authorization": `Bearer ${accessToken}`,
             },  
         })
         .then((response) => {
             // console.log(response.data);
-            setUserRecipes(response.data.map((item: ListItem) => item.recipe));
+            setApiRecipes(response.data.map((item: ListItem) => item.recipe));
             setTotalPages(Math.ceil(response.data.length / ITEMS_PER_PAGE));
         })
         .catch((error) => {
@@ -171,27 +173,42 @@ export default function Profile(){
         });
     }
     const initialize = async() => {
-        const {accessToken, refreshToken} = await setTokens();
-        const token =  await refreshAccessToken(accessToken, refreshToken);
-        await getUserRecipes(token);
+        await getAPIRecipes();
         setLoading(false);
-        }
-        useFocusEffect(
-            useCallback(() => {
-                initialize();
-            }, [])
-        );
-    const deleteUserRecipe = async(recipeId: string) => {
-        // get jwt tokens, ensure they are valid
-        const {accessToken, refreshToken} = await setTokens();
-        const token =  await refreshAccessToken(accessToken, refreshToken);
+    }
+    useEffect(()=> {
+        initialize();
+    }, []);
 
+    // runs when screen is navigated to
+    useFocusEffect(
+        useCallback(() => {
+            getAPIRecipes();
+        }, [])
+    );
+
+    const deleteUserRecipe = async(recipeId: string) => {
+        let accessToken = await SecureStorage.getItemAsync('accessToken');
+        let refreshToken = await SecureStorage.getItemAsync('refreshToken');
+        
+        // accesToken must be nonnull and not expired
+        if (!accessToken || !refreshToken) {
+            console.error("Access or refresh token is missing, can't get recipes");
+            return;
+        }else if (isTokenExpired(accessToken)){
+            await refreshTokens(refreshToken ?? '');
+            accessToken = await SecureStorage.getItemAsync('accessToken');
+            if (!accessToken){
+                console.error("Access token is not set after refresh, can't delete");
+                return;
+            }
+        }
+        
         // delete from database using api endpoint
         console.log("removing from db... ", recipeId);
-
-        const response = await axios.delete(`${backend}/api/user-recipes/delete/${recipeId}/`, {
+        await axios.delete(`${backend}/api/user-recipes/delete/${recipeId}/`, {
             headers: {
-                "Authorization": `Bearer ${token}`,
+                "Authorization": `Bearer ${accessToken}`,
             },
         })
         .then((response) => {
@@ -201,12 +218,11 @@ export default function Profile(){
             console.error('Failed to delete recipe:', error);
         });
 
-        // delete from state and update pagination
+        // remove from local state
         console.log("removing from List... ", recipeId);
-        const updatedUserRecipes = (userRecipes.filter(recipe => recipe.api_id !== recipeId));
-        setUserRecipes(updatedUserRecipes);
-
-        const newTotalPages = Math.ceil(updatedUserRecipes.length / ITEMS_PER_PAGE);
+        const updatedApiRecipes = apiRecipes.filter(recipe => recipe.api_id !== recipeId);
+        setApiRecipes(updatedApiRecipes);
+        const newTotalPages = Math.ceil(updatedApiRecipes.length / ITEMS_PER_PAGE);
         setTotalPages(newTotalPages);
         if (currentPage > newTotalPages) {
             setCurrentPage(newTotalPages);
@@ -224,6 +240,49 @@ export default function Profile(){
             setCurrentPage(currentPage + 1);
         }
     };
+
+    const handleSeeMore = (recipeId : string, recipeName : string) => {
+        console.log(recipeId);
+        navigation.push('Recipe', {
+            params: {recipeId: recipeId, recipeName: recipeName}
+        });
+    }
+
+    const handleLogout = async() => {
+        // accessToken must be nonnull and not expired
+        let accessToken = await SecureStorage.getItemAsync('accessToken');
+        let refreshToken = await SecureStorage.getItemAsync('refreshToken');
+
+        if (!accessToken || !refreshToken) {
+            console.error("Access or refresh token is missing, can't get recipes");
+            return;
+        }else if (isTokenExpired(accessToken)){
+            await refreshTokens(refreshToken ?? '');
+            accessToken = await SecureStorage.getItemAsync('accessToken');
+            if (!accessToken){
+                console.error("Access token is missing after refresh, can't logout");
+                return;
+            }
+        }
+        // logout from server
+        axios.post(`${backend}/api/logout/`, {
+            refresh: refreshToken,  // Include refreshToken in the request body
+        }, {
+            headers:{
+                "Authorization": `Bearer ${accessToken}`,
+            },  
+        })
+        .then((response) => {
+            console.log(response.status)
+        })
+        .catch((error) => {
+            console.log('Failed to logout:', error);
+        });
+
+        // cleanup secure storage and redux state
+        clearTokens();
+        dispatch({ type: 'LOGOUT_USER'})
+    }
     return (<>
        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
@@ -249,7 +308,7 @@ export default function Profile(){
                                 borderColor: COLORS.lightgray,
                                 borderWidth: 2,
                                 borderRadius: 5,
-                                marginVertical: 5,
+                                marginVertical: 10,
                                 justifyContent: 'center',
                                 paddingLeft: 8
                             }}>
@@ -257,6 +316,13 @@ export default function Profile(){
                             </View>
                         </View>
                     </View>
+                    {apiRecipes.length === 0 ? 
+                    <Text style={{
+                        textAlign: 'center',
+                        fontSize: 16,
+                        color: COLORS.black,
+                        marginVertical: 20
+                    }}>No recipes saved</Text> :
                     <View style={{
                         marginHorizontal: 18,
                         borderColor: COLORS.lightgray,
@@ -264,9 +330,9 @@ export default function Profile(){
                         borderRadius: 12,
                         marginBottom: 10,
                     }}>
-                        {userRecipes.slice((currentPage - 1) * ITEMS_PER_PAGE, ((currentPage - 1) * ITEMS_PER_PAGE) + ITEMS_PER_PAGE).map((recipe, index) => (
+                        {apiRecipes.slice((currentPage - 1) * ITEMS_PER_PAGE, ((currentPage - 1) * ITEMS_PER_PAGE) + ITEMS_PER_PAGE).map((recipe, index) => (
                             <View key={index} style={styles.recipeView}>
-                                <UserRecipe thumbnail={recipe.thumbnail} recipeId = {recipe.api_id} label={recipe.title} deleteRecipe={deleteUserRecipe}></UserRecipe>
+                                <UserRecipe thumbnail={recipe.thumbnail} recipeId = {recipe.api_id} label={recipe.title} deleteRecipe={deleteUserRecipe} seeMore={handleSeeMore}></UserRecipe>
                                 </View>
                         ))}
                         <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 20 }}>
@@ -287,19 +353,16 @@ export default function Profile(){
                             </Pressable>
                         </View>
                     </View>
+                    }
                     
-
                     <Pressable
                         style={styles.button}
-                        onPress={() => dispatch({ type: 'LOGOUT' })}> 
+                        onPress={handleLogout}> 
                         <Text style={styles.buttonText}>
                             Logout
                         </Text>
                     </Pressable>
             </ScrollView>
-            
-            
-            
       </SafeAreaView>
     </>);
 }

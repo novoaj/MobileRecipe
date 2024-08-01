@@ -1,6 +1,7 @@
 import React from 'react'
 import { Text, View, TextInput, Pressable, SafeAreaView, StyleSheet, Image, Switch, Alert } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from "@react-navigation/native";
 import axios from 'axios';
@@ -108,7 +109,7 @@ export default function Login(){
     const navigation = useNavigation();
 
     
-    const handleLogin = () => {
+    const handleLogin = async() => {
         // login logic with Django backend, change in user state on success should cause rerender of AppNavigator
         axios.post(`${process.env.REACT_APP_API_URL}/api/login/`, {
             username: username,
@@ -122,11 +123,11 @@ export default function Login(){
                 const { id, tokens, username } = response.data;
                 const { access, refresh } = tokens;
 
-                const setTokens = async(access : string, refresh : string) => {
-                    await AsyncStorage.setItem('accessToken', access);
-                    await AsyncStorage.setItem('refreshToken', refresh);
+                const saveTokens = (access : string, refresh : string) => {
+                    SecureStore.setItem('accessToken', access);
+                    SecureStore.setItem('refreshToken', refresh);
                 }
-                setTokens(access, refresh); // Store the JWT in AsyncStorage
+                saveTokens(access, refresh); // Store the JWT in AsyncStorage
                 
                 dispatch({ type: 'SET_USER', user: { id, username } });
 

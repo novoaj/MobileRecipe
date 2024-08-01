@@ -5,6 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import axios from 'axios';
 import Toast from "react-native-root-toast";
 import {COLORS} from '../../constants/Colors';
+import * as SecureStore from 'expo-secure-store';
 const logo = require('../../assets/images/logo-png.png');
 
 
@@ -129,9 +130,18 @@ export default function Signup(){
                     'Content-Type': 'application/json'
                 },
         })
-        .then(data => {
-            if (data.status === 201) {
-                dispatch({ type: 'SET_USER', user: {name: username}}); // TODO: deal with refresh and access tokens
+        .then(response => {
+            if (response.status === 201) {
+                const { id, tokens, username } = response.data;
+                const { access, refresh } = tokens;
+
+                const saveTokens = (access : string, refresh : string) => {
+                    SecureStore.setItem('accessToken', access);
+                    SecureStore.setItem('refreshToken', refresh);
+                }
+                saveTokens(access, refresh); // Store the JWTs in SecureStore
+                
+                dispatch({ type: 'SET_USER', user: { id, username }}); // update redux state
                 Toast.show("Signup Successful!", {
                     duration: Toast.durations.LONG,
                     position: Toast.positions.TOP,
@@ -141,7 +151,7 @@ export default function Signup(){
                     backgroundColor: "green"
                 });
             }else{
-                Toast.show("Login Failed, Please Try Again!", {
+                Toast.show("Register Failed, Please Try Again!", {
                     duration: Toast.durations.LONG,
                     position: Toast.positions.TOP,
                     shadow: true,

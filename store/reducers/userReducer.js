@@ -1,6 +1,7 @@
 const initialState = {
     user: null,
-    authenticated: false
+    authenticated: false,
+    savedRecipes: []
 }
 
 const userReducer = (state = initialState, action) => {
@@ -17,6 +18,16 @@ const userReducer = (state = initialState, action) => {
                 user: null,
                 authenticated: false,
             };
+        case 'SAVE_RECIPE':
+            return {
+                ...state,
+                savedRecipes: [...state.savedRecipes, action.recipe]
+            };
+        case 'SET_SAVED_RECIPES':
+            return {
+                ...state,
+                savedRecipes: action.recipes,
+            }
         default:
             return state;
     }

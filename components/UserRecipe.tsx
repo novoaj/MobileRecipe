@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import {View, Image, Text, StyleSheet, Animated} from 'react-native';
+import {View, Image, Text, StyleSheet, Animated, Pressable} from 'react-native';
 import { RectButton } from 'react-native-gesture-handler';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
@@ -13,6 +13,7 @@ type UserRecipeProps = {
     recipeId: string;
     label: string;
     deleteRecipe: (recipeId: string) => void;
+    seeMore: (recipeId: string, recipeName : string) => void;
 };
 
 const styles = StyleSheet.create({
@@ -59,7 +60,7 @@ const styles = StyleSheet.create({
     }
 })
 
-const UserRecipe: React.FC<UserRecipeProps> = ({ thumbnail, recipeId, label, deleteRecipe }) => {
+const UserRecipe: React.FC<UserRecipeProps> = ({ thumbnail, recipeId, label, deleteRecipe, seeMore }) => {
     const swipeableRef = useRef<Swipeable>(null);
     const handleDelete = () => {
         deleteRecipe(recipeId) // propogate up to parent component
@@ -67,6 +68,9 @@ const UserRecipe: React.FC<UserRecipeProps> = ({ thumbnail, recipeId, label, del
           swipeableRef.current.close(); // close this swipeable
       }
     }
+    const handleSeeMore = () => {
+      seeMore(recipeId, label) // propogate up to parent component  
+     }
     const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
         const trans = dragX.interpolate({
           inputRange: [0, 50, 100, 101],
@@ -83,7 +87,10 @@ const UserRecipe: React.FC<UserRecipeProps> = ({ thumbnail, recipeId, label, del
             <View style= {styles.container}>
                 <Image style={styles.img} src={thumbnail} alt={label} />
                 <Text style={styles.text}>{label}</Text>
-                <FontAwesomeIcon style={styles.arrow} icon={faCircleArrowRight} />
+                <Pressable onPress={handleSeeMore}>
+                    <FontAwesomeIcon style={styles.arrow} icon={faCircleArrowRight} />
+                </Pressable>  
+               
             </View>
         </Swipeable>
     );
